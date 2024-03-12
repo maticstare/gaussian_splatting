@@ -1,0 +1,10 @@
+# Ignore everything
+*
+# Except these files
+!.gitignore
+!report.pdf
+!report.tex
+!splats/
+!splats/*
+!images/
+!images/*

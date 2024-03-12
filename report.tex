@@ -1,0 +1,85 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{cite}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{lipsum}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{amsfonts}
+\usepackage{tikz}
+
+\graphicspath{ {./images/} }
+
+% Page layout
+\geometry{top=1in, bottom=1in, left=1in, right=1in}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Matic Stare}
+\lhead{Gaussian splatting}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Title
+\title{Gaussian splatting}
+\author{Matic Stare}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% Table of Contents
+\tableofcontents
+\newpage
+
+% Sections
+\section{Performance mesurements}\label{sec:p1}
+In this homework, we were tasked with implementing a Gaussian splatting algorithm. It is used to render a 3D point cloud into a 2D image. We were given 3 different point clouds, each with a different number of points. The first one (nike) had 270592 points, the second one (plush) 281600 and the third one (train) 1026560. We ran our algorithm on all three point clouds and measured the time it took to render the image. The results are shown in Table \ref{tab:results}.
+
+
+\begin{center}
+    \begin{tabular}{ |c|c| } 
+     \hline
+     Pointcloud & Time (s) \\
+     \hline
+     Nike & 10 \\ 
+     Plush & 10 \\ 
+     Train & 10 \\ 
+     \hline
+    \end{tabular}
+\end{center}\label{tab:results}
+
+Here is the result of the Gaussian splatting algorithm on the 3 mentioned pointclouds. The images are shown in Figure \ref{fig:images}.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{nike.png}
+        \caption{Nike}
+    \end{subfigure}
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{plush.png}
+        \caption{Plush}
+    \end{subfigure}
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{train.png}
+        \caption{Train}
+    \end{subfigure}
+    \caption{2D images of the point clouds}
+    \label{fig:images}
+\end{figure}
+
+
+
+
+\end{document}
