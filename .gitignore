@@ -8,3 +8,4 @@
 !splats/*
 !images/
 !images/*
+!gaussian_splatting.py
