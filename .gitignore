@@ -9,3 +9,4 @@
 !images/
 !images/*
 !gaussian_splatting.py
+!*.pdf

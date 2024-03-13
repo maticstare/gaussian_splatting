@@ -57,11 +57,10 @@ def plot_splats_sample(splats, sample_size):
     #print(r1.min(), r2.min(), r3.min(), r4.min())
 
 
-def project_pointcloud(splats):
+def project_pointcloud(splats, image_height, image_width):
     # Define intrinsic camera parameters 
-    focal_length = 150
-    image_width = 1920
-    image_height = 1080
+    focal_length = 1000
+    #focal_length = 150
     intrinsic_matrix = np.array([ 
         [focal_length, 0, image_width/2], 
         [0, focal_length, image_height/2], 
@@ -70,7 +69,8 @@ def project_pointcloud(splats):
 
     # Define extrinsic camera parameters 
     rvec = np.array([0, 0, 0], dtype=np.float32) 
-    tvec = np.array([0, 0, 0], dtype=np.float32) 
+    tvec = np.array([0, -2, 2], dtype=np.float32) 
+    #tvec = np.array([0, 0, 0], dtype=np.float32) 
 
     points_3d = np.dstack([splats[:,0],splats[:,1],splats[:,2]])[0]
     
@@ -97,11 +97,7 @@ def project_pointcloud(splats):
     r, g, b, a = splats[:,6], splats[:,7], splats[:,8], splats[:,9]
 
     for i in range(len(points_pos_color_2d)):
-        points_pos_color_2d[i] = np.array([points_2d[i][0][0], points_2d[i][0][1], b[i], g[i], r[i], a[i]])
-
-    # Apply Gaussian falloff
-    #points_pos_color_2d = apply_gaussian_falloff(points_pos_color_2d, distances, s)
-    
+        points_pos_color_2d[i] = np.array([points_2d[i][0][0], points_2d[i][0][1], b[i], g[i], r[i], a[i]])    
 
     return points_pos_color_2d.astype(int), distances
 
@@ -116,19 +112,24 @@ def apply_gaussian_falloff(c, x, s, z, a):
     g_x = np.exp(-0.5 * np.matmul(np.matmul(x_minus_c_transpose, sigma_inv), x_minus_c))
     return g_x * a
 
-def draw_2d_image(xybgra, distances, s):
-    image_height = 1080
-    image_width = 1920
+def draw_2d_image(xybgra, distances, s, image_height, image_width):
     # Plot 2D points 
-    img = np.ones((image_height, image_width, 3), dtype=np.float32)
+    img = np.zeros((image_height, image_width, 3), dtype=np.float32)
     max_distance = distances.max()
     
+    #sizes stats
+    sizes = np.zeros(len(xybgra))
     for i in range(len(xybgra)):
         x, y, b, g, r, a = xybgra[i].tolist()
         a /= 255
         # Scale size based on distance
         #size = round((((2 * s * max_distance) / distances[i])*10) % 10)
         size = int((2 * s * max_distance) / distances[i])
+
+        #sizes stats
+        sizes[i] = size
+        
+        #print(size)
 
         top_left = (max(0, x - size), max(0, y - size))
         bottom_right = (min(image_width - 1, x + size), min(image_height - 1, y + size))
@@ -142,6 +143,9 @@ def draw_2d_image(xybgra, distances, s):
                 a_adjusted = apply_gaussian_falloff((x, y, 0), (x1, y1, 0), s, distances[i], a)
                 img[y1, x1] = (1 - a_adjusted) * img[y1, x1] + a_adjusted * (np.array([b, g, r])/255) """
 
+    #sizes stats
+    print(dict(zip(*np.unique(sizes, return_counts=True))))
+
     cv2.imshow('Image', img) 
     cv2.waitKey(0) 
     cv2.destroyAllWindows()
@@ -149,9 +153,15 @@ def draw_2d_image(xybgra, distances, s):
 
 
 if __name__ == "__main__":
-    splats = load_splats("splats/train.splat")
+    splats = load_splats("splats/nike.splat")
+    #splats = load_splats("splats/plush.splat")
+    #splats = load_splats("splats/train.splat")
+    
     #plot_splats_sample(splats, len(splats)//1)
 
+    image_height = 1080
+    image_width = 1920
+
     s = 0.5
-    xybgra, distances = project_pointcloud(splats)
-    draw_2d_image(xybgra, distances, s)
+    xybgra, distances = project_pointcloud(splats, image_height, image_width)
+    draw_2d_image(xybgra, distances, s, image_height, image_width)
