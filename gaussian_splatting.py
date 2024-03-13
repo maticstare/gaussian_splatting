@@ -1,11 +1,12 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import os
 
 def load_splats(filename):
-    # Load splats from binary file
-    # 3x4B position, 3x4B scale, 4x1B color(RGBA), 4x1B rotation(xyzw)
-    # 12B + 12B + 4B + 4B = 32B per splat
+    #load splats from binary file
+    #3x4B position, 3x4B scale, 4x1B color(RGBA), 4x1B rotation(xyzw)
+    #12B + 12B + 4B + 4B = 32B per splat
     with open(filename, 'rb') as f:
         data = f.read()
     num_splats = len(data) // 32
@@ -36,7 +37,6 @@ def plot_splats_sample(splats, sample_size):
     r, g, b, a = splats[:,6], splats[:,7], splats[:,8], splats[:,9]
     
     C = np.dstack([r,g,b,a])[0]
-        #print(C)
 
     xyz = np.dstack([x,y,z])[0]
     idx = np.random.randint(len(x), size=sample_size)
@@ -58,7 +58,7 @@ def plot_splats_sample(splats, sample_size):
 
 
 def project_pointcloud(splats, image_height, image_width):
-    # Define intrinsic camera parameters 
+    #define intrinsic camera parameters 
     focal_length = 1000
     #focal_length = 150
     intrinsic_matrix = np.array([ 
@@ -67,24 +67,21 @@ def project_pointcloud(splats, image_height, image_width):
         [0, 0, 1] 
     ]) 
 
-    # Define extrinsic camera parameters 
+    #define extrinsic camera parameters
     rvec = np.array([0, 0, 0], dtype=np.float32) 
-    tvec = np.array([0, -2, 2], dtype=np.float32) 
-    #tvec = np.array([0, 0, 0], dtype=np.float32) 
+    tvec = np.array([0, -2, 2], dtype=np.float32)
 
     points_3d = np.dstack([splats[:,0],splats[:,1],splats[:,2]])[0]
     
-    # Calculate distances from points to the camera
-    # sorted only by z because the camera is looking in the z direction
+    #calculate distances from points to the camera
     distances = np.array(np.abs(points_3d[:, 2] - tvec[2]))
-    #print(distances.max(), distances.min())
 
-    # Sort points and colors by distance in descending order
+    #sort points and colors by distance in descending order
     sorted_indices = np.argsort(-distances)
     points_3d = points_3d[sorted_indices]
     splats = splats[sorted_indices]
 
-    # Project 3D points onto 2D plane 
+    #project 3D points onto 2D plane 
     points_2d, _ = cv2.projectPoints(points_3d, 
                                     rvec,
                                     tvec.reshape(-1, 1), 
@@ -92,7 +89,7 @@ def project_pointcloud(splats, image_height, image_width):
                                     None) 
     points_2d = points_2d.astype(int)
 
-    # Generate 2d points matrix [(x, y, b, g, r, a)]
+    #generate 2d points matrix [(x, y, b, g, r, a)]
     points_pos_color_2d = np.zeros((len(points_2d),6))
     r, g, b, a = splats[:,6], splats[:,7], splats[:,8], splats[:,9]
 
@@ -114,7 +111,7 @@ def apply_gaussian_falloff(c, x, s, z, a):
 
 def draw_2d_image(xybgra, distances, s, image_height, image_width):
     # Plot 2D points 
-    img = np.zeros((image_height, image_width, 3), dtype=np.float32)
+    img = np.ones((image_height, image_width, 3), dtype=np.float32)
     max_distance = distances.max()
     
     #sizes stats
@@ -125,27 +122,33 @@ def draw_2d_image(xybgra, distances, s, image_height, image_width):
         # Scale size based on distance
         #size = round((((2 * s * max_distance) / distances[i])*10) % 10)
         size = int((2 * s * max_distance) / distances[i])
+        
 
         #sizes stats
         sizes[i] = size
-        
-        #print(size)
 
         top_left = (max(0, x - size), max(0, y - size))
         bottom_right = (min(image_width - 1, x + size), min(image_height - 1, y + size))
         # Apply alpha blending
-        img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = \
+        """ img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = \
             (1 - a) * img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] + \
-            a * (np.array([b, g, r])/255)
-        
-        """ for y1 in range(top_left[1], bottom_right[1]):
+            a * (np.array([b, g, r])/255) """
+        # Apply gaussian falloff
+        for y1 in range(top_left[1], bottom_right[1]):
             for x1 in range(top_left[0], bottom_right[0]):
                 a_adjusted = apply_gaussian_falloff((x, y, 0), (x1, y1, 0), s, distances[i], a)
-                img[y1, x1] = (1 - a_adjusted) * img[y1, x1] + a_adjusted * (np.array([b, g, r])/255) """
+                img[y1, x1] = (1 - a_adjusted) * img[y1, x1] + a_adjusted * (np.array([b, g, r])/255)
 
     #sizes stats
     print(dict(zip(*np.unique(sizes, return_counts=True))))
 
+    #save image
+    #path = r'D:\fac\FRI\1\2\NRG\gaussian_splatting\images'
+    """ os.chdir(path)
+    filename = 'train.png'
+    cv2.imwrite(filename, img*255) """ 
+
+    #show image
     cv2.imshow('Image', img) 
     cv2.waitKey(0) 
     cv2.destroyAllWindows()
@@ -153,6 +156,9 @@ def draw_2d_image(xybgra, distances, s, image_height, image_width):
 
 
 if __name__ == "__main__":
+    import time
+    start_time = time.time()
+
     splats = load_splats("splats/nike.splat")
     #splats = load_splats("splats/plush.splat")
     #splats = load_splats("splats/train.splat")
@@ -165,3 +171,8 @@ if __name__ == "__main__":
     s = 0.5
     xybgra, distances = project_pointcloud(splats, image_height, image_width)
     draw_2d_image(xybgra, distances, s, image_height, image_width)
+
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Program executed in: {execution_time} seconds")
+
